@@ -4,6 +4,7 @@ import {Location} from '../interfaces/appInterfaces';
 
 export const useLocation = () => {
   const [hasLocation, setHasLocation] = useState(false);
+  const [routeLines, setRouteLines] = useState<Location[]>([]);
   const [initialPosition, setInitialPosition] = useState<Location>({
     longitude: 0,
     latitude: 0,
@@ -13,6 +14,7 @@ export const useLocation = () => {
     latitude: 0,
   });
   const watchId = useRef<number>();
+  const isMounted = useRef<boolean>(true);
   const getCurrentLocation = (): Promise<Location> => {
     return new Promise((resolve, reject) => {
       Geolocation.getCurrentPosition(
@@ -35,10 +37,12 @@ export const useLocation = () => {
   };
 
   const followUserLocation = () => {
+    if (!isMounted.current) return;
     watchId.current = Geolocation.watchPosition(
       ({coords: {latitude, longitude}}) => {
         console.log(latitude, longitude);
         setUserLocation({latitude, longitude});
+        setRouteLines(routes => [...routes, {latitude, longitude}]);
       },
       err => console.log(err),
       {
@@ -55,11 +59,17 @@ export const useLocation = () => {
   };
 
   useEffect(() => {
+    if (!isMounted.current) return;
     getCurrentLocation().then(location => {
+      if (!isMounted.current) return;
       setInitialPosition(location);
       setUserLocation(location);
+      setRouteLines(routes => [...routes, location]);
       setHasLocation(true);
     });
+    return () => {
+      isMounted.current = false;
+    };
   }, []);
   return {
     hasLocation,
@@ -68,5 +78,6 @@ export const useLocation = () => {
     getCurrentLocation,
     followUserLocation,
     stopFollowUserLocation,
+    routeLines,
   };
 };

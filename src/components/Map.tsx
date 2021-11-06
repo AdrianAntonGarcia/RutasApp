@@ -1,5 +1,5 @@
 import React, {useRef, useEffect} from 'react';
-import MapView, {Marker} from 'react-native-maps';
+import MapView, {Marker, Polyline} from 'react-native-maps';
 import {useLocation} from '../hooks/useLocation';
 import {LoadingScreen} from '../screens/LoadingScreen';
 import {Fab} from './Fab';
@@ -14,10 +14,12 @@ export const Map = ({markers}: Props) => {
     followUserLocation,
     stopFollowUserLocation,
     userLocation,
+    routeLines,
   } = useLocation();
 
   const mapViewRef = useRef<MapView>();
   const following = useRef<boolean>(true);
+  const isMounted = useRef<boolean>(true);
 
   const centerPosition = async () => {
     following.current = true;
@@ -31,13 +33,16 @@ export const Map = ({markers}: Props) => {
   };
 
   useEffect(() => {
+    if (!isMounted.current) return;
     followUserLocation();
     return () => {
       stopFollowUserLocation();
+      isMounted.current = false;
     };
   }, []);
 
   useEffect(() => {
+    if (!isMounted.current) return;
     if (!following.current) return;
     mapViewRef.current?.animateCamera({
       center: {
@@ -45,7 +50,9 @@ export const Map = ({markers}: Props) => {
         longitude: userLocation.longitude,
       },
     });
-    return () => {};
+    return () => {
+      isMounted.current = false;
+    };
   }, [userLocation]);
 
   if (!hasLocation) {
@@ -64,6 +71,11 @@ export const Map = ({markers}: Props) => {
           longitudeDelta: 0.0421,
         }}
         onTouchStart={() => (following.current = false)}>
+        <Polyline
+          coordinates={routeLines}
+          strokeColor="black"
+          strokeWidth={3}
+        />
         {/* <Marker
           image={require('../assets/custom-marker.png')}
           key={0}
