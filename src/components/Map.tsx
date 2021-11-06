@@ -1,4 +1,4 @@
-import React, {useRef} from 'react';
+import React, {useRef, useEffect} from 'react';
 import MapView, {Marker} from 'react-native-maps';
 import {useLocation} from '../hooks/useLocation';
 import {LoadingScreen} from '../screens/LoadingScreen';
@@ -7,7 +7,13 @@ interface Props {
   markers?: Marker[];
 }
 export const Map = ({markers}: Props) => {
-  const {hasLocation, initialPosition, getCurrentLocation} = useLocation();
+  const {
+    hasLocation,
+    initialPosition,
+    getCurrentLocation,
+    followUserLocation,
+    userLocation,
+  } = useLocation();
 
   const mapViewRef = useRef<MapView>();
 
@@ -20,6 +26,21 @@ export const Map = ({markers}: Props) => {
       },
     });
   };
+
+  useEffect(() => {
+    followUserLocation();
+    return () => {};
+  }, []);
+
+  useEffect(() => {
+    mapViewRef.current?.animateCamera({
+      center: {
+        latitude: userLocation.latitude,
+        longitude: userLocation.longitude,
+      },
+    });
+    return () => {};
+  }, [userLocation]);
 
   if (!hasLocation) {
     return <LoadingScreen />;
