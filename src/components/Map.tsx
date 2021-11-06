@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef} from 'react';
 import MapView, {Marker} from 'react-native-maps';
 import {useLocation} from '../hooks/useLocation';
 import {LoadingScreen} from '../screens/LoadingScreen';
@@ -7,7 +7,19 @@ interface Props {
   markers?: Marker[];
 }
 export const Map = ({markers}: Props) => {
-  const {hasLocation, initialPosition} = useLocation();
+  const {hasLocation, initialPosition, getCurrentLocation} = useLocation();
+
+  const mapViewRef = useRef<MapView>();
+
+  const centerPosition = async () => {
+    const {latitude, longitude} = await getCurrentLocation();
+    mapViewRef.current?.animateCamera({
+      center: {
+        latitude,
+        longitude,
+      },
+    });
+  };
 
   if (!hasLocation) {
     return <LoadingScreen />;
@@ -15,11 +27,12 @@ export const Map = ({markers}: Props) => {
   return (
     <>
       <MapView
+        ref={el => (mapViewRef.current = el!)}
         style={{flex: 1}}
         showsUserLocation
         initialRegion={{
           latitude: initialPosition.latitude,
-          longitude: initialPosition.longitud,
+          longitude: initialPosition.longitude,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}>
@@ -32,8 +45,8 @@ export const Map = ({markers}: Props) => {
         /> */}
       </MapView>
       <Fab
-        iconName="star-outline"
-        onPress={() => console.log('Hola fab')}
+        iconName="compass-outline"
+        onPress={() => centerPosition()}
         style={{position: 'absolute', bottom: 20, right: 20}}
       />
     </>
